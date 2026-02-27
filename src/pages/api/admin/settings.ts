@@ -1,7 +1,7 @@
 /// <reference types="@cloudflare/workers-types" />
 import type { APIRoute } from 'astro';
-import { getBrandConfig, saveBrandConfig } from '../../lib/config';
-import type { BrandConfig } from '../../lib/config';
+import { getBrandConfig, saveBrandConfig } from '../../../lib/config';
+import type { BrandConfig } from '../../../lib/config';
 
 // GET is public — brand config may be fetched by external consumers
 const GET_CORS = {
