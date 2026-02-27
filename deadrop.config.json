@@ -1,0 +1,15 @@
+{
+  "brand": {
+    "name": "Deadrop",
+    "tagline": "Share it once. Then it's gone.",
+    "logo": null,
+    "primaryColor": "#ef4444",
+    "domain": "deadrop.dev",
+    "supportEmail": "hello@deadrop.dev"
+  },
+  "limits": {
+    "maxSecretBytes": 10000,
+    "maxTtlDays": 30,
+    "defaultTtlSeconds": 86400
+  }
+}

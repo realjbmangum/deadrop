@@ -1,0 +1,319 @@
+---
+export const prerender = false;
+import config from '../../deadrop.config.json';
+const { brand } = config;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{brand.name} — {brand.tagline}</title>
+    <meta name="description" content={`${brand.name}: Zero-knowledge self-destructing secret sharing. ${brand.tagline}`} />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="min-h-screen bg-[#0a0a0f] text-gray-200 antialiased" style={`font-family: 'Inter', system-ui, sans-serif;`}>
+
+    <!-- Subtle grid background -->
+    <div class="fixed inset-0 opacity-[0.03] pointer-events-none"
+         style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 32px 32px;">
+    </div>
+
+    <main class="relative max-w-[640px] mx-auto px-5 py-12 sm:py-20">
+
+      <!-- Header -->
+      <header class="mb-12 text-center">
+        <h1 class="text-3xl sm:text-4xl font-bold tracking-tight text-white mb-3">
+          {brand.name}<span class="text-[var(--accent)]">.</span>
+        </h1>
+        <p class="text-gray-400 text-lg">{brand.tagline}</p>
+      </header>
+
+      <!-- Create Form -->
+      <div id="create-form">
+        <!-- Secret Input -->
+        <div class="mb-6">
+          <label for="secret-input" class="block text-sm font-medium text-gray-400 mb-2">
+            Your secret
+          </label>
+          <textarea
+            id="secret-input"
+            rows="6"
+            maxlength="10000"
+            placeholder="Paste your password, API key, or sensitive text..."
+            class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-3 text-gray-100 font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)] transition-colors resize-y"
+          ></textarea>
+          <div class="mt-1.5 flex justify-between text-xs text-gray-600">
+            <span>End-to-end encrypted in your browser</span>
+            <span id="char-count">0 / 10,000</span>
+          </div>
+        </div>
+
+        <!-- Expiry Selector -->
+        <div class="mb-8">
+          <label class="block text-sm font-medium text-gray-400 mb-3">
+            Self-destruct after
+          </label>
+          <div class="flex flex-wrap gap-2" id="expiry-options">
+            <button type="button" data-expiry="1view"
+              class="expiry-pill active px-4 py-2 rounded-lg text-sm font-medium border transition-all">
+              1 View
+            </button>
+            <button type="button" data-expiry="24h"
+              class="expiry-pill px-4 py-2 rounded-lg text-sm font-medium border transition-all">
+              24 Hours
+            </button>
+            <button type="button" data-expiry="7d"
+              class="expiry-pill px-4 py-2 rounded-lg text-sm font-medium border transition-all">
+              7 Days
+            </button>
+            <button type="button" data-expiry="custom"
+              class="expiry-pill px-4 py-2 rounded-lg text-sm font-medium border transition-all">
+              Custom
+            </button>
+          </div>
+          <!-- Custom days input (hidden by default) -->
+          <div id="custom-expiry" class="mt-3 hidden">
+            <div class="flex items-center gap-3">
+              <input
+                type="number"
+                id="custom-days"
+                min="1"
+                max="30"
+                value="3"
+                class="w-24 bg-[#111118] border border-gray-800 rounded-lg px-3 py-2 text-gray-100 text-sm focus:outline-none focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+              />
+              <span class="text-sm text-gray-400">days (1-30)</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <button
+          id="create-btn"
+          type="button"
+          class="w-full py-3.5 rounded-lg font-semibold text-white text-base transition-all hover:brightness-110 active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed"
+          style={`background-color: ${brand.primaryColor};`}
+        >
+          Create Deadrop &rarr;
+        </button>
+
+        <!-- Error -->
+        <div id="create-error" class="hidden mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm"></div>
+      </div>
+
+      <!-- Result Section (hidden until secret is created) -->
+      <div id="result-section" class="hidden">
+        <div class="rounded-xl border border-gray-800 bg-[#111118] p-6">
+          <!-- Success indicator -->
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center" style={`background-color: ${brand.primaryColor}22;`}>
+              <svg class="w-4 h-4" style={`color: ${brand.primaryColor};`} fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <span class="text-white font-medium">Secret encrypted &amp; stored</span>
+          </div>
+
+          <!-- Link display -->
+          <label class="block text-sm text-gray-400 mb-2">Share this link (one-time use)</label>
+          <div class="relative">
+            <input
+              id="result-link"
+              type="text"
+              readonly
+              class="w-full bg-[#0a0a0f] border border-gray-700 rounded-lg pl-4 pr-20 py-3 text-green-400 font-mono text-sm focus:outline-none select-all"
+            />
+            <button
+              id="copy-btn"
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-xs font-medium text-white transition-colors"
+              style={`background-color: ${brand.primaryColor};`}
+            >
+              Copy
+            </button>
+          </div>
+
+          <!-- Expiry info -->
+          <p id="expiry-info" class="mt-3 text-sm text-gray-500"></p>
+
+          <!-- Warning -->
+          <div class="mt-5 p-3 rounded-lg bg-amber-500/5 border border-amber-500/10">
+            <p class="text-xs text-amber-400/80 leading-relaxed">
+              The decryption key is in the URL fragment (#...) and is never sent to our server.
+              Once you close this page, the key is only in the link above.
+            </p>
+          </div>
+        </div>
+
+        <!-- Create another -->
+        <button
+          id="create-another"
+          type="button"
+          class="mt-6 w-full py-3 rounded-lg border border-gray-800 text-gray-400 text-sm font-medium hover:text-white hover:border-gray-600 transition-colors"
+        >
+          Create another Deadrop
+        </button>
+      </div>
+
+      <!-- Footer -->
+      <footer class="mt-16 pt-8 border-t border-gray-800/50 text-center">
+        <p class="text-xs text-gray-600">
+          Zero-knowledge encryption &middot; Nothing is stored in plaintext &middot; Open source
+        </p>
+      </footer>
+
+    </main>
+
+    <!-- Accent color CSS variable -->
+    <style define:vars={{ accent: brand.primaryColor }}>
+      .expiry-pill {
+        background-color: transparent;
+        border-color: #1f2937;
+        color: #9ca3af;
+      }
+      .expiry-pill:hover {
+        border-color: #374151;
+        color: #d1d5db;
+      }
+      .expiry-pill.active {
+        background-color: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+    </style>
+
+    <script>
+      import { encryptSecret } from '../lib/crypto';
+
+      const secretInput = document.getElementById('secret-input') as HTMLTextAreaElement;
+      const charCount = document.getElementById('char-count')!;
+      const expiryOptions = document.getElementById('expiry-options')!;
+      const customExpiry = document.getElementById('custom-expiry')!;
+      const customDays = document.getElementById('custom-days') as HTMLInputElement;
+      const createBtn = document.getElementById('create-btn') as HTMLButtonElement;
+      const createError = document.getElementById('create-error')!;
+      const createForm = document.getElementById('create-form')!;
+      const resultSection = document.getElementById('result-section')!;
+      const resultLink = document.getElementById('result-link') as HTMLInputElement;
+      const copyBtn = document.getElementById('copy-btn')!;
+      const expiryInfo = document.getElementById('expiry-info')!;
+      const createAnother = document.getElementById('create-another')!;
+
+      let selectedExpiry = '1view';
+
+      // Character counter
+      secretInput.addEventListener('input', () => {
+        const len = secretInput.value.length;
+        charCount.textContent = `${len.toLocaleString()} / 10,000`;
+      });
+
+      // Expiry pill selection
+      expiryOptions.addEventListener('click', (e) => {
+        const pill = (e.target as HTMLElement).closest('.expiry-pill') as HTMLElement | null;
+        if (!pill) return;
+
+        expiryOptions.querySelectorAll('.expiry-pill').forEach(p => p.classList.remove('active'));
+        pill.classList.add('active');
+        selectedExpiry = pill.dataset.expiry!;
+
+        if (selectedExpiry === 'custom') {
+          customExpiry.classList.remove('hidden');
+        } else {
+          customExpiry.classList.add('hidden');
+        }
+      });
+
+      // Get TTL and view limit from selection
+      function getExpiryParams(): { ttlSeconds: number; viewLimit: number; label: string } {
+        switch (selectedExpiry) {
+          case '1view':
+            return { ttlSeconds: 604800, viewLimit: 1, label: '1 view (expires in 7 days if unread)' };
+          case '24h':
+            return { ttlSeconds: 86400, viewLimit: 100, label: '24 hours' };
+          case '7d':
+            return { ttlSeconds: 604800, viewLimit: 100, label: '7 days' };
+          case 'custom': {
+            const days = Math.min(30, Math.max(1, parseInt(customDays.value) || 3));
+            return { ttlSeconds: days * 86400, viewLimit: 100, label: `${days} day${days > 1 ? 's' : ''}` };
+          }
+          default:
+            return { ttlSeconds: 86400, viewLimit: 100, label: '24 hours' };
+        }
+      }
+
+      // Create secret
+      createBtn.addEventListener('click', async () => {
+        const plaintext = secretInput.value.trim();
+        if (!plaintext) {
+          secretInput.focus();
+          return;
+        }
+
+        createBtn.disabled = true;
+        createBtn.textContent = 'Encrypting...';
+        createError.classList.add('hidden');
+
+        try {
+          // Encrypt in browser
+          const { ciphertext, iv, keyB64 } = await encryptSecret(plaintext);
+          const { ttlSeconds, viewLimit, label } = getExpiryParams();
+
+          // Send ciphertext to API
+          const res = await fetch('/api/secret', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ciphertext, iv, viewLimit, ttlSeconds }),
+          });
+
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({ error: 'Request failed' }));
+            throw new Error(data.error || `Server error (${res.status})`);
+          }
+
+          const { id } = await res.json();
+
+          // Build the share URL — key is ONLY in the fragment
+          const shareUrl = `${window.location.origin}/s/${id}#${keyB64}`;
+
+          // Show result
+          resultLink.value = shareUrl;
+          expiryInfo.textContent = `This secret will self-destruct after ${label}.`;
+          createForm.classList.add('hidden');
+          resultSection.classList.remove('hidden');
+
+        } catch (err: any) {
+          createError.textContent = err.message || 'Something went wrong. Please try again.';
+          createError.classList.remove('hidden');
+        } finally {
+          createBtn.disabled = false;
+          createBtn.innerHTML = 'Create Deadrop &rarr;';
+        }
+      });
+
+      // Copy link
+      copyBtn.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(resultLink.value);
+          copyBtn.textContent = 'Copied!';
+          setTimeout(() => { copyBtn.textContent = 'Copy'; }, 2000);
+        } catch {
+          resultLink.select();
+        }
+      });
+
+      // Create another
+      createAnother.addEventListener('click', () => {
+        secretInput.value = '';
+        charCount.textContent = '0 / 10,000';
+        createError.classList.add('hidden');
+        resultSection.classList.add('hidden');
+        createForm.classList.remove('hidden');
+        secretInput.focus();
+      });
+    </script>
+
+  </body>
+</html>
