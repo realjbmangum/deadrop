@@ -43,18 +43,14 @@ const brand = await getBrandConfig(kv);
       <!-- Header -->
       <header class="mb-8 reveal">
 
-        <!-- Logo mark row -->
-        <div class="flex items-center gap-3 mb-5">
-          <!-- Logo -->
-          <img src="/Logo.png" alt="Deadrop logo" width="44" height="44" class="flex-shrink-0" />
-          <span class="text-[10px] font-mono tracking-[0.22em] text-[#5A5A80] uppercase">SECURE CREDENTIAL TRANSFER</span>
+        <!-- Logo + headline stacked centered -->
+        <div class="text-center">
+          <img src="/Logo.png" alt="Deadrop logo" width="120" height="120" class="mx-auto mb-5" />
+          <h1 class="font-mono font-extrabold text-white leading-none mb-3" style="font-size: clamp(2.8rem, 9vw, 5rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+            {brand.name}<span class="accent-text cursor-blink">_</span>
+          </h1>
+          <p class="text-sm text-[#9090AA]" style="font-family: 'IBM Plex Sans', sans-serif;">{brand.tagline}</p>
         </div>
-
-        <!-- Headline -->
-        <h1 class="font-mono font-extrabold text-white leading-none mb-3" style="font-size: clamp(2.8rem, 9vw, 5rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
-          {brand.name}<span class="accent-text cursor-blink">_</span>
-        </h1>
-        <p class="text-sm text-[#9090AA]" style="font-family: 'IBM Plex Sans', sans-serif;">{brand.tagline}</p>
 
       </header>
 
