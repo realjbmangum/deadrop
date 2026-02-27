@@ -2,7 +2,7 @@
 export const prerender = false;
 import { getBrandConfig } from '../lib/config';
 const kv = Astro.locals.runtime.env.DEADROP_SECRETS;
-const brand = await getBrandConfig(kv);
+const brand = await getBrandConfig(kv, Astro.url.hostname);
 
 function hexToRgb(hex: string): string {
   const c = hex.replace('#', '');

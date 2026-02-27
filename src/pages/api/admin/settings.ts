@@ -45,9 +45,10 @@ export const OPTIONS: APIRoute = async () =>
   new Response(null, { status: 204, headers: GET_CORS });
 
 // GET — return current brand config (public, no auth needed)
-export const GET: APIRoute = async ({ locals }) => {
+export const GET: APIRoute = async ({ request, locals }) => {
   const kv = locals.runtime.env.DEADROP_SECRETS;
-  const brand = await getBrandConfig(kv);
+  const hostname = new URL(request.url).hostname;
+  const brand = await getBrandConfig(kv, hostname);
   return jsonGet({ brand });
 };
 
@@ -91,8 +92,9 @@ export const PUT: APIRoute = async ({ request, locals }) => {
   }
 
   const kv = locals.runtime.env.DEADROP_SECRETS;
-  await saveBrandConfig(kv, sanitized);
+  const hostname = new URL(request.url).hostname;
+  await saveBrandConfig(kv, sanitized, hostname);
 
-  const updated = await getBrandConfig(kv);
+  const updated = await getBrandConfig(kv, hostname);
   return json({ brand: updated });
 };
