@@ -118,12 +118,11 @@ No copy-pasting. The script handles everything.
 
 In `wrangler.toml`, set a password for the `/admin` settings page:
 
-```toml
-[vars]
-ADMIN_SECRET = "your-strong-password-here"
+```bash
+echo "$(openssl rand -hex 32)" | npx wrangler pages secret put ADMIN_SECRET --project-name deadrop
 ```
 
-Generate a strong one: `openssl rand -hex 32`
+> **Do not put `ADMIN_SECRET` in `wrangler.toml`** — that would commit it to git and override Cloudflare's encrypted secret store. Use the command above instead.
 
 ---
 
@@ -230,7 +229,7 @@ KV TTL auto-deletes it. Default: 7 days for 1-view links.
 ~$0. Cloudflare free tier: 100k KV reads/day, 1k writes/day, Pages deployments free.
 
 **Can I set a passphrase on secrets?**
-Not yet — v2 roadmap item.
+Yes. Toggle "ADD PASSPHRASE" when creating a secret. The recipient must enter the passphrase before the secret is revealed. Keys are derived via PBKDF2 — the passphrase never leaves the browser.
 
 ---
 
