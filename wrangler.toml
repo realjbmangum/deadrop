@@ -12,8 +12,5 @@ preview_id = "f01acfcf014f430ba581c95298ec2643"
 
 # ─── Environment Variables ────────────────────────────────────────────────────
 # ADMIN_SECRET: protects the /admin settings page.
-# DO NOT set this here in wrangler.toml — use Cloudflare encrypted secrets:
-#   wrangler secret put ADMIN_SECRET
-# For local dev only, you can set it temporarily below (never commit a real value):
-[vars]
-ADMIN_SECRET = ""
+# Set via Cloudflare dashboard (Secrets) or:
+#   wrangler pages secret put ADMIN_SECRET --project-name deadrop
