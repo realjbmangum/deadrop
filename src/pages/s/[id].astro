@@ -45,12 +45,7 @@ const brand = await getBrandConfig(kv);
         <a href="/" class="inline-block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00FF88] focus-visible:outline-offset-4 rounded">
           <!-- Lock SVG logo -->
           <div class="flex items-center justify-center gap-2.5 mb-2">
-            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" class="flex-shrink-0">
-              <rect x="1" y="1" width="30" height="30" rx="7" stroke-width="1.5" class="accent-stroke" stroke-opacity="0.45"/>
-              <path d="M11 15V12a5 5 0 0 1 10 0v3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="accent-stroke"/>
-              <rect x="7.5" y="15" width="17" height="11" rx="2.5" stroke-width="1.5" class="accent-stroke" fill="transparent"/>
-              <circle cx="16" cy="20.5" r="1.75" class="accent-fill"/>
-            </svg>
+            <img src="/Logo.png" alt="Deadrop logo" width="32" height="32" class="flex-shrink-0" />
             <h1 class="font-mono font-extrabold text-white leading-none" style="font-size: clamp(1.8rem, 6vw, 2.8rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
               {brand.name}<span class="accent-text">_</span>
             </h1>
