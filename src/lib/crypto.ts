@@ -2,6 +2,9 @@
  * Browser-side AES-GCM-256 encryption for Deadrop.
  * Uses the Web Crypto API — runs only in the browser.
  * The key never leaves the client; only ciphertext is sent to the server.
+ *
+ * Passphrase mode: key is derived via PBKDF2(passphrase, salt, 100k, SHA-256).
+ * The salt goes in the URL fragment as `p:{salt}` — no key transmitted at all.
  */
 
 function toBase64Url(buf: ArrayBuffer): string {
@@ -82,4 +85,83 @@ export async function decryptSecret(
   );
 
   return new TextDecoder().decode(plaintextBuf);
+}
+
+/**
+ * Encrypt with a passphrase using PBKDF2 key derivation.
+ * Returns ciphertext, iv, and the base64url-encoded PBKDF2 salt.
+ * The salt goes in the URL fragment (`p:{saltB64}`) — no key is ever transmitted.
+ */
+export async function encryptWithPassphrase(
+  plaintext: string,
+  passphrase: string
+): Promise<{ ciphertext: string; iv: string; saltB64: string }> {
+  const enc = new TextEncoder();
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['encrypt']
+  );
+
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertextBuf = await crypto.subtle.encrypt(
+    { name: 'AES-GCM', iv },
+    aesKey,
+    enc.encode(plaintext)
+  );
+
+  return {
+    ciphertext: toBase64Url(ciphertextBuf),
+    iv: toBase64Url(iv.buffer),
+    saltB64: toBase64Url(salt.buffer),
+  };
+}
+
+/**
+ * Decrypt a passphrase-protected secret.
+ * The salt comes from the URL fragment (`p:{saltB64}`).
+ */
+export async function decryptWithPassphrase(
+  ciphertext: string,
+  iv: string,
+  saltB64: string,
+  passphrase: string
+): Promise<string> {
+  const enc = new TextEncoder();
+  const salt = fromBase64Url(saltB64);
+
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw', enc.encode(passphrase), { name: 'PBKDF2' }, false, ['deriveKey']
+  );
+  const aesKey = await crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt, iterations: 100_000, hash: 'SHA-256' },
+    keyMaterial,
+    { name: 'AES-GCM', length: 256 },
+    false,
+    ['decrypt']
+  );
+
+  const plaintextBuf = await crypto.subtle.decrypt(
+    { name: 'AES-GCM', iv: fromBase64Url(iv) },
+    aesKey,
+    fromBase64Url(ciphertext)
+  );
+
+  return new TextDecoder().decode(plaintextBuf);
+}
+
+/**
+ * Generate a cryptographically random password.
+ */
+export function generatePassword(length = 20): string {
+  const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*-_';
+  const bytes = crypto.getRandomValues(new Uint8Array(length));
+  return Array.from(bytes, b => charset[b % charset.length]).join('');
 }
