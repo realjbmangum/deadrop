@@ -22,7 +22,7 @@ const adminConfigured = Boolean(env.ADMIN_SECRET);
   <body class="min-h-screen bg-[#0a0a0f] text-gray-200 antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
 
     <!-- Grid background -->
-    <div class="fixed inset-0 opacity-[0.03] pointer-events-none"
+    <div aria-hidden="true" class="fixed inset-0 opacity-[0.03] pointer-events-none"
          style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 32px 32px;">
     </div>
 
@@ -52,12 +52,12 @@ const adminConfigured = Boolean(env.ADMIN_SECRET);
       <div id="auth-section" class={adminConfigured ? '' : 'opacity-40 pointer-events-none'}>
         <div class="rounded-xl border border-gray-800 bg-[#111118] p-5 mb-6">
           <label class="block text-sm font-medium text-gray-400 mb-2">Admin Password</label>
-          <div class="flex gap-3">
+          <div class="flex flex-wrap gap-3">
             <input
               type="password"
               id="admin-password"
               placeholder="Enter your ADMIN_SECRET"
-              class="flex-1 bg-[#0a0a0f] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+              class="flex-1 min-w-0 bg-[#0a0a0f] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
             />
             <button
               id="unlock-btn"
@@ -81,14 +81,14 @@ const adminConfigured = Boolean(env.ADMIN_SECRET);
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-2">Site Name</label>
             <input type="text" id="brand-name" maxlength="60"
-              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
               placeholder="Deadrop" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-2">Tagline</label>
             <input type="text" id="brand-tagline" maxlength="100"
-              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
               placeholder="Share it once. Then it's gone." />
           </div>
 
@@ -98,7 +98,7 @@ const adminConfigured = Boolean(env.ADMIN_SECRET);
               <input type="color" id="brand-color-picker"
                 class="w-12 h-10 rounded-lg border border-gray-800 bg-[#111118] cursor-pointer p-1" />
               <input type="text" id="brand-color-hex" maxlength="9" pattern="^#[0-9a-fA-F]{3,8}$"
-                class="w-32 bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+                class="w-32 bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
                 placeholder="#ef4444" />
               <span class="text-xs text-gray-500">Used for buttons and accents</span>
             </div>
@@ -107,14 +107,14 @@ const adminConfigured = Boolean(env.ADMIN_SECRET);
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-2">Domain</label>
             <input type="text" id="brand-domain" maxlength="100"
-              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
               placeholder="deadrop.dev" />
           </div>
 
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-2">Support Email</label>
             <input type="email" id="brand-email" maxlength="100"
-              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
               placeholder="hello@deadrop.dev" />
           </div>
         </div>

@@ -12,7 +12,8 @@ preview_id = "YOUR_KV_NAMESPACE_PREVIEW_ID"
 
 # ─── Environment Variables ────────────────────────────────────────────────────
 # ADMIN_SECRET: protects the /admin settings page.
-# Set this before deploying. Use a strong random string.
-# Example: openssl rand -hex 32
+# DO NOT set this here in wrangler.toml — use Cloudflare encrypted secrets:
+#   wrangler secret put ADMIN_SECRET
+# For local dev only, you can set it temporarily below (never commit a real value):
 [vars]
 ADMIN_SECRET = ""

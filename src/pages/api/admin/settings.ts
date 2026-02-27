@@ -3,43 +3,59 @@ import type { APIRoute } from 'astro';
 import { getBrandConfig, saveBrandConfig } from '../../lib/config';
 import type { BrandConfig } from '../../lib/config';
 
-const CORS_HEADERS = {
+// GET is public — brand config may be fetched by external consumers
+const GET_CORS = {
+  'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, PUT, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Methods': 'GET, OPTIONS',
 };
 
-function json(data: unknown, status = 200) {
-  return new Response(JSON.stringify(data), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
-  });
+// PUT is same-origin only — no CORS header means browsers block cross-origin writes
+const PUT_HEADERS = {
+  'Content-Type': 'application/json',
+};
+
+function jsonGet(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: GET_CORS });
 }
 
-function isAuthorized(request: Request, env: Record<string, string>): boolean {
+function json(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), { status, headers: PUT_HEADERS });
+}
+
+// Constant-time string comparison — prevents timing attacks on the Bearer token
+async function isAuthorized(request: Request, env: Record<string, string>): Promise<boolean> {
   const adminSecret = env.ADMIN_SECRET;
-  // If no secret configured, admin is disabled
   if (!adminSecret) return false;
-  const auth = request.headers.get('Authorization');
-  return auth === `Bearer ${adminSecret}`;
+  const auth = request.headers.get('Authorization') ?? '';
+  const enc = new TextEncoder();
+  const expected = enc.encode(`Bearer ${adminSecret}`);
+  const actual = enc.encode(auth);
+  // Different lengths → reject immediately (no timing leak; length is public knowledge)
+  if (expected.length !== actual.length) return false;
+  // XOR every byte — loops the same number of times regardless of where mismatch is
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) {
+    diff |= expected[i] ^ actual[i];
+  }
+  return diff === 0;
 }
 
 export const OPTIONS: APIRoute = async () =>
-  new Response(null, { status: 204, headers: CORS_HEADERS });
+  new Response(null, { status: 204, headers: GET_CORS });
 
 // GET — return current brand config (public, no auth needed)
 export const GET: APIRoute = async ({ locals }) => {
-  const env = locals.runtime.env as Record<string, KVNamespace & string>;
   const kv = locals.runtime.env.DEADROP_SECRETS;
   const brand = await getBrandConfig(kv);
-  return json({ brand });
+  return jsonGet({ brand });
 };
 
 // PUT — save brand config (requires Authorization: Bearer <ADMIN_SECRET>)
 export const PUT: APIRoute = async ({ request, locals }) => {
   const env = locals.runtime.env as Record<string, KVNamespace & string>;
 
-  if (!isAuthorized(request, env as unknown as Record<string, string>)) {
+  if (!await isAuthorized(request, env as unknown as Record<string, string>)) {
     return json({ error: 'Unauthorized' }, 401);
   }
 

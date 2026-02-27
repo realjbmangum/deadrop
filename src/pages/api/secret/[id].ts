@@ -7,6 +7,9 @@ const CORS_HEADERS = {
   'Access-Control-Allow-Headers': 'Content-Type',
 };
 
+// UUID v4 regex — validates id before using it in a KV key
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function notFoundResponse() {
   return new Response(
     JSON.stringify({ error: 'Secret not found or already burned' }),
@@ -20,6 +23,12 @@ export const OPTIONS: APIRoute = async () => {
 
 export const GET: APIRoute = async ({ params, locals }) => {
   const { id } = params;
+
+  // Reject non-UUID ids before touching KV
+  if (!id || !UUID_REGEX.test(id)) {
+    return notFoundResponse();
+  }
+
   const kv = locals.runtime.env.DEADROP_SECRETS;
 
   const raw = await kv.get(`secret:${id}`);
