@@ -3,9 +3,17 @@ export const prerender = false;
 import { getBrandConfig } from '../lib/config';
 const kv = Astro.locals.runtime.env.DEADROP_SECRETS;
 const brand = await getBrandConfig(kv);
+
+function hexToRgb(hex: string): string {
+  const c = hex.replace('#', '');
+  return `${parseInt(c.slice(0,2),16)}, ${parseInt(c.slice(2,4),16)}, ${parseInt(c.slice(4,6),16)}`;
+}
+const accentColor = brand.primaryColor || '#00FF88';
+const accentRgb   = hexToRgb(accentColor);
+const isCustomBrand = accentColor.toUpperCase() !== '#00FF88';
 ---
 
-<html lang="en">
+<html lang="en" style={`--accent: ${accentColor}; --accent-rgb: ${accentRgb};`}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -15,11 +23,13 @@ const brand = await getBrandConfig(kv);
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
-    <!-- Avoid FOUC: apply saved theme before paint -->
-    <script>
-      const t = localStorage.getItem('deadrop-theme');
-      if (t === 'red') document.documentElement.setAttribute('data-theme', 'red');
-    </script>
+    <!-- Avoid FOUC: apply saved theme before paint (default brand only) -->
+    {!isCustomBrand && (
+      <script>
+        const t = localStorage.getItem('deadrop-theme');
+        if (t === 'red') document.documentElement.setAttribute('data-theme', 'red');
+      </script>
+    )}
   </head>
   <body class="min-h-screen bg-[#0D0D12] text-gray-200 antialiased">
 
@@ -31,12 +41,14 @@ const brand = await getBrandConfig(kv);
     <!-- Grid background -->
     <div aria-hidden="true" class="fixed inset-0 pointer-events-none grid-bg"></div>
 
-    <!-- Theme switcher (fixed top-right corner) -->
-    <div class="fixed top-4 right-5 z-20 flex items-center gap-2" role="group" aria-label="Color theme">
-      <span class="text-[9px] font-mono text-[#4A4A6A] tracking-widest uppercase hidden sm:block">THEME</span>
-      <button class="theme-dot" data-theme-target="green" aria-label="Green theme" aria-pressed="true"></button>
-      <button class="theme-dot" data-theme-target="red" aria-label="Red theme" aria-pressed="false"></button>
-    </div>
+    <!-- Theme switcher (hidden for white-label deployments) -->
+    {!isCustomBrand && (
+      <div class="fixed top-4 right-5 z-20 flex items-center gap-2" role="group" aria-label="Color theme">
+        <span class="text-[9px] font-mono text-[#4A4A6A] tracking-widest uppercase hidden sm:block">THEME</span>
+        <button class="theme-dot" data-theme-target="green" aria-label="Green theme" aria-pressed="true"></button>
+        <button class="theme-dot" data-theme-target="red" aria-label="Red theme" aria-pressed="false"></button>
+      </div>
+    )}
 
     <main class="relative max-w-[740px] mx-auto px-6 py-14 sm:py-24">
 
@@ -45,7 +57,7 @@ const brand = await getBrandConfig(kv);
 
         <!-- Logo + headline stacked centered -->
         <div class="text-center">
-          <img src="/Logo.png" alt="Deadrop logo" width="160" height="160" class="mx-auto mb-6" />
+          <img src={brand.logo || '/Logo.png'} alt={`${brand.name} logo`} width="160" height="160" class="mx-auto mb-6" />
           <h1 class="font-mono font-extrabold text-white leading-none mb-4" style="font-size: clamp(3.5rem, 10vw, 6rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
             {brand.name}<span class="accent-text cursor-blink">_</span>
           </h1>
