@@ -15,29 +15,48 @@ const brand = await getBrandConfig(kv);
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+    <!-- Avoid FOUC: apply saved theme before paint -->
+    <script>
+      const t = localStorage.getItem('deadrop-theme');
+      if (t === 'red') document.documentElement.setAttribute('data-theme', 'red');
+    </script>
   </head>
   <body class="min-h-screen bg-[#0D0D12] text-gray-200 antialiased">
 
     <!-- Atmospheric glow -->
     <div aria-hidden="true" class="fixed inset-0 pointer-events-none overflow-hidden">
-      <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[600px] h-[600px] rounded-full"
-           style="background: radial-gradient(circle, rgba(0,255,136,0.05) 0%, transparent 65%);"></div>
+      <div class="atmo-glow absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/3 w-[600px] h-[600px] rounded-full"></div>
     </div>
 
-    <!-- Dot grid -->
-    <div aria-hidden="true" class="fixed inset-0 pointer-events-none"
-         style="background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px); background-size: 28px 28px; opacity: 0.4;"></div>
+    <!-- Grid background -->
+    <div aria-hidden="true" class="fixed inset-0 pointer-events-none grid-bg"></div>
+
+    <!-- Theme switcher (fixed top-right corner) -->
+    <div class="fixed top-4 right-5 z-20 flex items-center gap-2" role="group" aria-label="Color theme">
+      <span class="text-[9px] font-mono text-[#4A4A6A] tracking-widest uppercase hidden sm:block">THEME</span>
+      <button class="theme-dot" data-theme-target="green" aria-label="Green theme" aria-pressed="true"></button>
+      <button class="theme-dot" data-theme-target="red" aria-label="Red theme" aria-pressed="false"></button>
+    </div>
 
     <main class="relative max-w-[560px] mx-auto px-5 py-12 sm:py-20">
 
       <!-- Header -->
       <header class="mb-10 text-center reveal">
         <a href="/" class="inline-block focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00FF88] focus-visible:outline-offset-4 rounded">
-          <h1 class="font-mono font-extrabold text-white leading-none" style="font-size: clamp(1.8rem, 6vw, 2.8rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
-            {brand.name}<span class="text-[#00FF88]">_</span>
-          </h1>
+          <!-- Lock SVG logo -->
+          <div class="flex items-center justify-center gap-2.5 mb-2">
+            <svg width="24" height="24" viewBox="0 0 32 32" fill="none" aria-hidden="true" class="flex-shrink-0">
+              <rect x="1" y="1" width="30" height="30" rx="7" stroke-width="1.5" class="accent-stroke" stroke-opacity="0.45"/>
+              <path d="M11 15V12a5 5 0 0 1 10 0v3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="accent-stroke"/>
+              <rect x="7.5" y="15" width="17" height="11" rx="2.5" stroke-width="1.5" class="accent-stroke" fill="transparent"/>
+              <circle cx="16" cy="20.5" r="1.75" class="accent-fill"/>
+            </svg>
+            <h1 class="font-mono font-extrabold text-white leading-none" style="font-size: clamp(1.8rem, 6vw, 2.8rem); font-family: 'JetBrains Mono', monospace; letter-spacing: -0.02em;">
+              {brand.name}<span class="accent-text">_</span>
+            </h1>
+          </div>
         </a>
-        <p class="mt-2 text-[11px] font-mono text-[#3A3A5A] tracking-[0.2em] uppercase">incoming secret</p>
+        <p class="mt-2 text-[11px] font-mono text-[#5A5A78] tracking-[0.2em] uppercase">incoming secret</p>
       </header>
 
       <!-- PRE-REVEAL (warning + optional passphrase + button) -->
@@ -51,7 +70,7 @@ const brand = await getBrandConfig(kv);
             </svg>
             <div>
               <p class="text-amber-200 font-mono font-semibold text-sm mb-1">ONE-TIME SECRET</p>
-              <p class="text-amber-400/70 text-sm leading-relaxed" style="font-family: 'IBM Plex Sans', sans-serif;">
+              <p class="text-amber-400/80 text-sm leading-relaxed" style="font-family: 'IBM Plex Sans', sans-serif;">
                 This secret will be <strong class="text-amber-300 font-semibold">permanently destroyed</strong> after you view it. Make sure you're ready to copy it before revealing.
               </p>
             </div>
@@ -62,7 +81,7 @@ const brand = await getBrandConfig(kv);
         <div id="passphrase-section" class="hidden mb-5">
           <div class="form-card p-5">
             <label class="field-label mb-3 block">PASSPHRASE REQUIRED</label>
-            <p class="text-sm text-[#5A5A7A] mb-4" style="font-family: 'IBM Plex Sans', sans-serif;">
+            <p class="text-sm text-[#8080A0] mb-4" style="font-family: 'IBM Plex Sans', sans-serif;">
               The sender added a passphrase to this secret. Enter it to decrypt.
             </p>
             <input
@@ -70,7 +89,7 @@ const brand = await getBrandConfig(kv);
               id="passphrase-input"
               placeholder="Enter passphrase..."
               autocomplete="off"
-              class="w-full bg-[#080810] border border-[#1A1A2E] rounded-lg px-4 py-2.5 text-[#E0E0F0] font-mono text-sm placeholder-[#2E2E4A] focus:outline-none focus:border-[#00FF88] focus:ring-1 focus:ring-[#00FF88]/20 transition-all"
+              class="w-full bg-[#080810] border border-[#1A1A2E] rounded-lg px-4 py-2.5 text-[#E0E0F0] font-mono text-sm placeholder-[#3E3E58] focus:outline-none transition-all input-accent"
             />
             <p id="passphrase-error" class="hidden mt-2 text-red-400 text-xs font-mono"></p>
           </div>
@@ -85,8 +104,8 @@ const brand = await getBrandConfig(kv);
 
       <!-- LOADING -->
       <div id="loading-state" class="hidden text-center py-14" role="status" aria-label="Decrypting secret">
-        <div aria-hidden="true" class="inline-block w-6 h-6 border-2 border-[#1A1A2E] border-t-[#00FF88] rounded-full animate-spin mb-5"></div>
-        <p class="text-[#4A4A6A] text-sm font-mono tracking-wider">DECRYPTING<span class="dots-anim">...</span></p>
+        <div aria-hidden="true" class="inline-block w-6 h-6 border-2 border-[#1A1A2E] rounded-full animate-spin mb-5 spinner-top"></div>
+        <p class="text-[#6A6A88] text-sm font-mono tracking-wider">DECRYPTING<span class="dots-anim">...</span></p>
       </div>
 
       <!-- REVEALED -->
@@ -103,7 +122,7 @@ const brand = await getBrandConfig(kv);
           </div>
           <pre
             id="secret-display"
-            class="px-5 py-5 text-[#00FF88] font-mono text-sm whitespace-pre-wrap break-all leading-relaxed max-h-[400px] overflow-y-auto"
+            class="px-5 py-5 accent-text font-mono text-sm whitespace-pre-wrap break-all leading-relaxed max-h-[400px] overflow-y-auto"
           ></pre>
         </div>
 
@@ -115,7 +134,7 @@ const brand = await getBrandConfig(kv);
             </svg>
             <span class="text-red-400 font-mono font-semibold text-sm tracking-wide">DESTROYED</span>
           </div>
-          <p class="text-red-400/50 text-xs font-mono">This secret has been permanently deleted. This link will not work again.</p>
+          <p class="text-red-400/60 text-xs font-mono">This secret has been permanently deleted. This link will not work again.</p>
         </div>
       </div>
 
@@ -123,12 +142,12 @@ const brand = await getBrandConfig(kv);
       <div id="error-section" class="hidden">
         <div class="form-card p-10 text-center">
           <div class="w-14 h-14 rounded-full bg-[#0A0A14] border border-[#1A1A2E] flex items-center justify-center mx-auto mb-5">
-            <svg aria-hidden="true" class="w-7 h-7 text-[#3A3A5A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+            <svg aria-hidden="true" class="w-7 h-7 text-[#5A5A7A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
               <path stroke-linecap="round" stroke-linejoin="round" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
             </svg>
           </div>
           <h2 class="font-mono font-bold text-white text-lg mb-2 tracking-tight">NOT FOUND</h2>
-          <p id="error-message" class="text-[#5A5A7A] text-sm leading-relaxed" style="font-family: 'IBM Plex Sans', sans-serif;">
+          <p id="error-message" class="text-[#8080A0] text-sm leading-relaxed" style="font-family: 'IBM Plex Sans', sans-serif;">
             This secret no longer exists. It may have already been viewed or expired.
           </p>
         </div>
@@ -136,7 +155,7 @@ const brand = await getBrandConfig(kv);
 
       <!-- Footer -->
       <footer class="mt-16 pt-6 border-t border-[#141420] text-center">
-        <a href="/" class="text-[11px] font-mono text-[#2E2E48] hover:text-[#00FF88] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-[#00FF88] focus-visible:outline-offset-2 rounded">
+        <a href="/" class="text-[11px] font-mono text-[#5A5A78] hover:accent-text-hover transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 rounded footer-link">
           SEND YOUR OWN SECRET WITH {brand.name}_
         </a>
       </footer>
@@ -144,7 +163,54 @@ const brand = await getBrandConfig(kv);
     </main>
 
     <style>
+      :root {
+        --accent: #00FF88;
+        --accent-rgb: 0, 255, 136;
+      }
+      [data-theme="red"] {
+        --accent: #FF3355;
+        --accent-rgb: 255, 51, 85;
+      }
+
       body { font-family: 'IBM Plex Sans', system-ui, sans-serif; }
+
+      /* Accent utilities */
+      .accent-text   { color: var(--accent); }
+      .accent-fill   { fill: var(--accent); }
+      .accent-stroke { stroke: var(--accent); }
+
+      /* Atmospheric glow */
+      .atmo-glow {
+        background: radial-gradient(circle, rgba(var(--accent-rgb), 0.06) 0%, transparent 65%);
+      }
+
+      /* Grid background */
+      .grid-bg {
+        background-image:
+          linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+        background-size: 40px 40px;
+      }
+
+      /* Theme dots */
+      .theme-dot {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+        padding: 0;
+      }
+      .theme-dot[data-theme-target="green"] { background: #00FF88; }
+      .theme-dot[data-theme-target="red"]   { background: #FF3355; }
+      .theme-dot[data-theme-target="green"].active {
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.25), 0 0 10px rgba(0,255,136,0.7);
+      }
+      .theme-dot[data-theme-target="red"].active {
+        box-shadow: 0 0 0 2px rgba(255,255,255,0.25), 0 0 10px rgba(255,51,85,0.7);
+      }
+      .theme-dot:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
 
       .reveal { opacity: 0; transform: translateY(12px); animation: revealUp 0.5s ease forwards; }
       @keyframes revealUp { to { opacity: 1; transform: translateY(0); } }
@@ -160,7 +226,7 @@ const brand = await getBrandConfig(kv);
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.18em;
-        color: #5A5A7A;
+        color: #7A7A9A;
         text-transform: uppercase;
       }
 
@@ -174,7 +240,7 @@ const brand = await getBrandConfig(kv);
       .reveal-btn {
         width: 100%;
         padding: 16px;
-        background: #00FF88;
+        background: var(--accent);
         color: #050508;
         font-family: 'JetBrains Mono', monospace;
         font-size: 14px;
@@ -186,26 +252,41 @@ const brand = await getBrandConfig(kv);
         transition: all 0.2s;
       }
       .reveal-btn:hover {
-        background: #00FFB0;
-        box-shadow: 0 0 24px rgba(0,255,136,0.35), 0 4px 16px rgba(0,255,136,0.2);
+        filter: brightness(1.1);
+        box-shadow: 0 0 28px rgba(var(--accent-rgb), 0.4), 0 4px 16px rgba(var(--accent-rgb), 0.2);
         transform: translateY(-1px);
       }
-      .reveal-btn:active { transform: scale(0.99); }
+      .reveal-btn:active { transform: scale(0.99); filter: none; }
+
+      /* Input accent focus state */
+      .input-accent:focus {
+        border-color: var(--accent) !important;
+        box-shadow: 0 0 0 1px rgba(var(--accent-rgb), 0.2) !important;
+      }
 
       .copy-btn {
         padding: 5px 12px;
-        background: rgba(0,255,136,0.08);
-        color: #00FF88;
+        background: rgba(var(--accent-rgb), 0.08);
+        color: var(--accent);
         font-family: 'JetBrains Mono', monospace;
         font-size: 10px;
         font-weight: 700;
         letter-spacing: 0.1em;
-        border: 1px solid rgba(0,255,136,0.2);
+        border: 1px solid rgba(var(--accent-rgb), 0.2);
         border-radius: 6px;
         cursor: pointer;
         transition: all 0.2s;
       }
-      .copy-btn:hover { background: rgba(0,255,136,0.15); border-color: rgba(0,255,136,0.4); }
+      .copy-btn:hover {
+        background: rgba(var(--accent-rgb), 0.15);
+        border-color: rgba(var(--accent-rgb), 0.4);
+      }
+
+      /* Spinner border top */
+      .spinner-top { border-top-color: var(--accent); }
+
+      /* Footer link hover */
+      .footer-link:hover { color: var(--accent); }
 
       .dots-anim { animation: dots 1.4s steps(4, end) infinite; }
       @keyframes dots {
@@ -241,7 +322,29 @@ const brand = await getBrandConfig(kv);
       const ppError         = document.getElementById('passphrase-error')!;
       const secretDisplay   = document.getElementById('secret-display')!;
       const copySecretBtn   = document.getElementById('copy-secret-btn')!;
+      const themeDots       = document.querySelectorAll<HTMLButtonElement>('.theme-dot');
 
+      // ── Theme ──────────────────────────────────────────────────────────────────
+      function applyTheme(theme: 'green' | 'red', persist = true) {
+        document.documentElement.setAttribute('data-theme', theme);
+        if (persist) localStorage.setItem('deadrop-theme', theme);
+        themeDots.forEach(dot => {
+          const active = dot.dataset.themeTarget === theme;
+          dot.classList.toggle('active', active);
+          dot.setAttribute('aria-pressed', String(active));
+        });
+      }
+
+      const savedTheme = localStorage.getItem('deadrop-theme') as 'green' | 'red' | null;
+      applyTheme(savedTheme === 'red' ? 'red' : 'green', false);
+
+      themeDots.forEach(dot => {
+        dot.addEventListener('click', () => {
+          applyTheme(dot.dataset.themeTarget as 'green' | 'red');
+        });
+      });
+
+      // ── Secret reveal ──────────────────────────────────────────────────────────
       function showError(msg: string) {
         preReveal.classList.add('hidden');
         loadingState.classList.add('hidden');
@@ -266,7 +369,6 @@ const brand = await getBrandConfig(kv);
       } else if (isPassphrase) {
         ppSection.classList.remove('hidden');
         ppInput.focus();
-        // Allow Enter key on passphrase input
         ppInput.addEventListener('keydown', (e) => {
           if (e.key === 'Enter') revealBtn.click();
         });
@@ -275,7 +377,6 @@ const brand = await getBrandConfig(kv);
       revealBtn.addEventListener('click', async () => {
         if (!fragment) return;
 
-        // For passphrase mode, validate input
         if (isPassphrase) {
           ppError.classList.add('hidden');
           if (!ppInput.value.trim()) {
@@ -309,11 +410,10 @@ const brand = await getBrandConfig(kv);
 
           let plaintext: string;
           if (isPassphrase) {
-            const saltB64 = fragment.slice(2); // strip 'p:'
+            const saltB64 = fragment.slice(2);
             try {
               plaintext = await decryptWithPassphrase(ciphertext, iv, saltB64, ppInput.value);
             } catch {
-              // Wrong passphrase — the view was consumed. Show clear message.
               loadingState.classList.add('hidden');
               preReveal.classList.remove('hidden');
               ppError.textContent = 'Wrong passphrase. Note: one view was consumed.';
