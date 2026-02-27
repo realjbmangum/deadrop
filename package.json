@@ -4,6 +4,7 @@
   "description": "Zero-knowledge self-destructing secret sharing on Cloudflare",
   "private": false,
   "scripts": {
+    "setup": "node scripts/setup.cjs",
     "dev": "astro dev",
     "build": "astro build",
     "preview": "wrangler pages dev ./dist",

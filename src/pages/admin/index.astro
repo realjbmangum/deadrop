@@ -1,0 +1,323 @@
+---
+export const prerender = false;
+import { getBrandConfig } from '../../lib/config';
+const kv = Astro.locals.runtime.env.DEADROP_SECRETS;
+const brand = await getBrandConfig(kv);
+
+// Check if ADMIN_SECRET is configured
+const env = Astro.locals.runtime.env as Record<string, unknown>;
+const adminConfigured = Boolean(env.ADMIN_SECRET);
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{brand.name} — Admin Settings</title>
+    <meta name="robots" content="noindex, nofollow" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  </head>
+  <body class="min-h-screen bg-[#0a0a0f] text-gray-200 antialiased" style="font-family: 'Inter', system-ui, sans-serif;">
+
+    <!-- Grid background -->
+    <div class="fixed inset-0 opacity-[0.03] pointer-events-none"
+         style="background-image: linear-gradient(rgba(255,255,255,.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.1) 1px, transparent 1px); background-size: 32px 32px;">
+    </div>
+
+    <main class="relative max-w-[640px] mx-auto px-5 py-12 sm:py-20">
+
+      <!-- Header -->
+      <header class="mb-10">
+        <a href="/" class="text-sm text-gray-500 hover:text-gray-300 transition-colors mb-6 block">
+          ← Back to {brand.name}
+        </a>
+        <h1 class="text-2xl font-bold text-white mb-1">Admin Settings</h1>
+        <p class="text-gray-500 text-sm">Customize branding. Changes take effect immediately — no redeploy needed.</p>
+      </header>
+
+      {!adminConfigured && (
+        <div class="rounded-xl border border-amber-500/30 bg-amber-500/5 p-5 mb-8">
+          <p class="text-amber-300 font-medium text-sm mb-1">Admin password not configured</p>
+          <p class="text-amber-400/70 text-sm leading-relaxed">
+            Set the <code class="font-mono bg-amber-500/10 px-1.5 py-0.5 rounded text-amber-300">ADMIN_SECRET</code> environment variable
+            in your <code class="font-mono bg-amber-500/10 px-1.5 py-0.5 rounded text-amber-300">wrangler.toml</code> to enable this page.
+          </p>
+          <pre class="mt-3 bg-[#111118] border border-gray-800 rounded-lg p-3 text-xs text-gray-400 font-mono">{`[vars]\nADMIN_SECRET = "your-strong-password-here"`}</pre>
+        </div>
+      )}
+
+      <!-- Auth section -->
+      <div id="auth-section" class={adminConfigured ? '' : 'opacity-40 pointer-events-none'}>
+        <div class="rounded-xl border border-gray-800 bg-[#111118] p-5 mb-6">
+          <label class="block text-sm font-medium text-gray-400 mb-2">Admin Password</label>
+          <div class="flex gap-3">
+            <input
+              type="password"
+              id="admin-password"
+              placeholder="Enter your ADMIN_SECRET"
+              class="flex-1 bg-[#0a0a0f] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm placeholder-gray-600 focus:outline-none focus:border-gray-600 focus:ring-1 focus:ring-gray-600"
+            />
+            <button
+              id="unlock-btn"
+              type="button"
+              class="px-4 py-2.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-300 hover:text-white text-sm font-medium transition-colors"
+            >
+              Unlock
+            </button>
+          </div>
+          <p id="auth-error" class="hidden mt-2 text-red-400 text-xs"></p>
+        </div>
+      </div>
+
+      <!-- Settings form (locked until authenticated) -->
+      <div id="settings-form" class="hidden">
+
+        <!-- Brand Name -->
+        <div class="space-y-5 mb-8">
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider">Brand</h2>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Site Name</label>
+            <input type="text" id="brand-name" maxlength="60"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600"
+              placeholder="Deadrop" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Tagline</label>
+            <input type="text" id="brand-tagline" maxlength="100"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 text-sm focus:outline-none focus:border-gray-600"
+              placeholder="Share it once. Then it's gone." />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Accent Color</label>
+            <div class="flex items-center gap-3">
+              <input type="color" id="brand-color-picker"
+                class="w-12 h-10 rounded-lg border border-gray-800 bg-[#111118] cursor-pointer p-1" />
+              <input type="text" id="brand-color-hex" maxlength="9" pattern="^#[0-9a-fA-F]{3,8}$"
+                class="w-32 bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+                placeholder="#ef4444" />
+              <span class="text-xs text-gray-500">Used for buttons and accents</span>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Domain</label>
+            <input type="text" id="brand-domain" maxlength="100"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+              placeholder="deadrop.dev" />
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-400 mb-2">Support Email</label>
+            <input type="email" id="brand-email" maxlength="100"
+              class="w-full bg-[#111118] border border-gray-800 rounded-lg px-4 py-2.5 text-gray-100 font-mono text-sm focus:outline-none focus:border-gray-600"
+              placeholder="hello@deadrop.dev" />
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="mb-8">
+          <h2 class="text-sm font-semibold text-gray-300 uppercase tracking-wider mb-4">Preview</h2>
+          <div class="rounded-xl border border-gray-800 bg-[#111118] p-6">
+            <div class="text-center mb-5">
+              <p class="text-2xl font-bold text-white" id="preview-name">{brand.name}<span id="preview-dot" style={`color: ${brand.primaryColor}`}>.</span></p>
+              <p class="text-gray-400 text-sm mt-1" id="preview-tagline">{brand.tagline}</p>
+            </div>
+            <button id="preview-btn" type="button"
+              class="w-full py-3 rounded-lg font-semibold text-white text-sm transition-all"
+              style={`background-color: ${brand.primaryColor}`}>
+              Create Deadrop →
+            </button>
+          </div>
+        </div>
+
+        <!-- Save -->
+        <button id="save-btn" type="button"
+          class="w-full py-3.5 rounded-lg font-semibold text-white text-base transition-all hover:brightness-110 active:scale-[0.98]"
+          style={`background-color: ${brand.primaryColor}`}>
+          Save Settings
+        </button>
+
+        <div id="save-success" class="hidden mt-4 p-3 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-sm text-center">
+          ✓ Settings saved. Changes are live immediately.
+        </div>
+        <div id="save-error" class="hidden mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 text-sm text-center"></div>
+
+      </div>
+
+    </main>
+
+    <script define:vars={{ initialBrand: brand }}>
+      let adminPassword = '';
+      let currentBrand = { ...initialBrand };
+
+      const authSection = document.getElementById('auth-section');
+      const settingsForm = document.getElementById('settings-form');
+      const passwordInput = document.getElementById('admin-password');
+      const unlockBtn = document.getElementById('unlock-btn');
+      const authError = document.getElementById('auth-error');
+
+      // Form fields
+      const nameInput = document.getElementById('brand-name');
+      const taglineInput = document.getElementById('brand-tagline');
+      const colorPicker = document.getElementById('brand-color-picker');
+      const colorHex = document.getElementById('brand-color-hex');
+      const domainInput = document.getElementById('brand-domain');
+      const emailInput = document.getElementById('brand-email');
+
+      // Preview elements
+      const previewName = document.getElementById('preview-name');
+      const previewDot = document.getElementById('preview-dot');
+      const previewTagline = document.getElementById('preview-tagline');
+      const previewBtn = document.getElementById('preview-btn');
+
+      const saveBtn = document.getElementById('save-btn');
+      const saveSuccess = document.getElementById('save-success');
+      const saveError = document.getElementById('save-error');
+
+      function populateForm(brand) {
+        nameInput.value = brand.name || '';
+        taglineInput.value = brand.tagline || '';
+        colorPicker.value = brand.primaryColor || '#ef4444';
+        colorHex.value = brand.primaryColor || '#ef4444';
+        domainInput.value = brand.domain || '';
+        emailInput.value = brand.supportEmail || '';
+        updatePreview(brand);
+      }
+
+      function updatePreview(brand) {
+        const name = brand.name || 'Deadrop';
+        const color = brand.primaryColor || '#ef4444';
+        // Replace the text node but keep the dot span
+        previewName.childNodes[0].textContent = name;
+        previewDot.style.color = color;
+        previewTagline.textContent = brand.tagline || '';
+        previewBtn.style.backgroundColor = color;
+        saveBtn.style.backgroundColor = color;
+      }
+
+      // Sync color picker <-> hex input
+      colorPicker.addEventListener('input', () => {
+        colorHex.value = colorPicker.value;
+        updatePreview({ ...getFormValues() });
+      });
+
+      colorHex.addEventListener('input', () => {
+        const val = colorHex.value;
+        if (/^#[0-9a-fA-F]{6}$/.test(val)) {
+          colorPicker.value = val;
+        }
+        updatePreview({ ...getFormValues() });
+      });
+
+      // Live preview on any input change
+      [nameInput, taglineInput, domainInput, emailInput].forEach(el => {
+        el.addEventListener('input', () => updatePreview(getFormValues()));
+      });
+
+      function getFormValues() {
+        return {
+          name: nameInput.value.trim(),
+          tagline: taglineInput.value.trim(),
+          primaryColor: colorHex.value.trim(),
+          domain: domainInput.value.trim(),
+          supportEmail: emailInput.value.trim(),
+        };
+      }
+
+      // Unlock
+      unlockBtn.addEventListener('click', async () => {
+        const pw = passwordInput.value;
+        if (!pw) return;
+
+        unlockBtn.textContent = 'Checking...';
+        unlockBtn.disabled = true;
+
+        // Test the password by making an authenticated GET
+        const res = await fetch('/api/admin/settings', {
+          headers: { Authorization: `Bearer ${pw}` },
+        });
+
+        unlockBtn.disabled = false;
+        unlockBtn.textContent = 'Unlock';
+
+        // GET is public so any response means the server is up;
+        // we'll verify auth on save. For now, try a PUT with empty body to test auth.
+        const testRes = await fetch('/api/admin/settings', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${pw}`,
+          },
+          body: JSON.stringify({ brand: {} }),
+        });
+
+        if (testRes.status === 401) {
+          authError.textContent = 'Incorrect password.';
+          authError.classList.remove('hidden');
+          return;
+        }
+
+        adminPassword = pw;
+        authError.classList.add('hidden');
+        authSection.classList.add('hidden');
+
+        // Load current settings and show form
+        const data = await res.json();
+        currentBrand = data.brand || currentBrand;
+        populateForm(currentBrand);
+        settingsForm.classList.remove('hidden');
+      });
+
+      // Enter key on password field
+      passwordInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') unlockBtn.click();
+      });
+
+      // Save
+      saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        saveSuccess.classList.add('hidden');
+        saveError.classList.add('hidden');
+
+        const brand = getFormValues();
+
+        try {
+          const res = await fetch('/api/admin/settings', {
+            method: 'PUT',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${adminPassword}`,
+            },
+            body: JSON.stringify({ brand }),
+          });
+
+          const data = await res.json();
+
+          if (!res.ok) {
+            throw new Error(data.error || `Error ${res.status}`);
+          }
+
+          currentBrand = data.brand;
+          saveSuccess.classList.remove('hidden');
+
+        } catch (err) {
+          saveError.textContent = err.message || 'Failed to save settings.';
+          saveError.classList.remove('hidden');
+        } finally {
+          saveBtn.disabled = false;
+          saveBtn.textContent = 'Save Settings';
+        }
+      });
+
+      // Init preview with current values
+      populateForm(currentBrand);
+    </script>
+
+  </body>
+</html>

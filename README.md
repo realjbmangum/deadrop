@@ -1,88 +1,94 @@
-```
-     _                _
-  __| | ___  __ _  __| |_ __ ___  _ __
- / _` |/ _ \/ _` |/ _` | '__/ _ \| '_ \
-| (_| |  __/ (_| | (_| | | | (_) | |_) |
- \__,_|\___|\__,_|\__,_|_|  \___/| .__/
-                                  |_|
-```
+# 🔐 Deadrop
 
-**Share it once. Then it's gone.**
+> **Share it once. Then it's gone.**
 
-[![MIT License](https://img.shields.io/badge/license-MIT-red.svg)](LICENSE)
-[![Cloudflare](https://img.shields.io/badge/runs%20on-Cloudflare-F38020.svg)](https://pages.cloudflare.com)
-[![Zero Knowledge](https://img.shields.io/badge/encryption-zero--knowledge-green.svg)](#how-it-works)
+Zero-knowledge, self-destructing secret sharing built natively on Cloudflare. No servers to manage, no Docker, no databases. Everything runs at the edge for ~$0/month.
+
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-orange.svg)](https://pages.cloudflare.com)
 
 ---
 
 ## What is Deadrop?
 
-Every day, people paste passwords into Slack messages, email API keys to teammates, and text credit card numbers to family members. Those messages sit in server logs, search indexes, and backup tapes forever.
+Sending passwords and API keys over email or Slack leaves a permanent, searchable record. Deadrop creates a one-time link that self-destructs after the recipient opens it — leaving no trace.
 
-**Deadrop** creates one-time, self-destructing links for sensitive data. The secret is encrypted in your browser before it ever leaves your device. The server stores only ciphertext it cannot read. The recipient opens the link, the secret decrypts in their browser, and the server-side record is permanently deleted.
-
-No accounts. No logins. No tracking. One link, one view, then gone.
+- **Zero-knowledge** — secrets are encrypted in the sender's browser. Only ciphertext ever hits the server.
+- **One-time links** — burned immediately on first view. The link stops working.
+- **Time-based expiry** — secrets auto-delete even if the link is never opened.
+- **White-label ready** — brand it as your own via `/admin` (no code changes, no redeploy).
+- **Deploy in 10 minutes** — one command after a free Cloudflare account setup.
 
 ---
 
 ## How It Works
 
-Deadrop uses **client-side AES-256-GCM encryption** with the key stored exclusively in the URL fragment (`#`), which browsers never send to servers.
+The key insight: the decryption key lives **only in the URL fragment** (`#...`). The HTTP spec guarantees fragments are never sent to the server. So even if someone gained access to the database, they couldn't read anything.
 
 ```
-[Your Browser]                    [Cloudflare KV]
-     |                                  |
-     |-- Generate AES-256 key           |
-     |-- Encrypt secret in-browser      |
-     |-- POST { ciphertext, iv } -----> |-- Store encrypted blob
-     |<- Receive { id }                 |
-     |                                  |
-     |-- Build link:                    |
-     |   deadrop.dev/s/{id}#{key}       |
-     |   (key NEVER sent to server)     |
-     |                                  |
-[Recipient Browser]                     |
-     |-- Open link                      |
-     |-- Extract key from #fragment     |
-     |-- GET /api/secret/{id} --------> |-- Return ciphertext
-     |                                  |-- DELETE entry (burned)
-     |-- Decrypt locally                |
-     |-- Display secret                 |
+[Sender's Browser]                     [Cloudflare KV]
+        |                                     |
+        |── Generate AES-256 key              |
+        |── Encrypt secret in browser         |
+        |── POST { ciphertext, iv } ────────► |── Store encrypted blob
+        |◄─ Receive { id }                    |   (TTL auto-expires it)
+        |                                     |
+        |── Build share link:                 |
+        |   deadrop.dev/s/{id}#{key}          |
+        |   ↑ key NEVER sent to server        |
+        |                                     |
+[Recipient's Browser]                         |
+        |── Open link                         |
+        |── Read key from #fragment           |
+        |── GET /api/secret/{id} ───────────► |── Return ciphertext
+        |                                     |── DELETE entry (burned)
+        |── Decrypt locally with key          |
+        |── Display secret                    |
 ```
-
-### The security model in plain English
-
-1. **You type a secret.** Your browser generates a random AES-256-GCM encryption key and encrypts the secret entirely client-side.
-2. **Only ciphertext hits the server.** The encrypted blob and initialization vector are sent to a Cloudflare Worker, which stores them in KV with a random ID and a TTL.
-3. **The key lives in the link fragment.** The shareable link is `deadrop.dev/s/{id}#{key}`. The `#key` portion (the fragment) is never sent to the server by any browser -- this is part of the HTTP specification, not a Deadrop feature.
-4. **One view, then burned.** When the recipient opens the link, the Worker returns the ciphertext and immediately deletes it from KV. The browser extracts the key from the fragment, decrypts the secret, and displays it.
-5. **Even Cloudflare can't read it.** The server never sees the key. The ciphertext without the key is computationally useless. If someone compromises the KV store, they get random noise.
 
 ---
 
-## Features
+## Architecture
 
-- **Zero-knowledge encryption** -- the server never sees plaintext or the decryption key
-- **One-time links** -- burned permanently after first view
-- **Time-based expiry** -- auto-deletes after 1 hour to 30 days (your choice)
-- **No accounts or tracking** -- no cookies, no analytics, no user data
-- **White-label ready** -- one config file controls brand, colors, and limits
-- **Free to run** -- deploys on Cloudflare's free tier (~$0/month)
-- **MIT licensed** -- fork it, brand it, sell it, whatever you want
+Deadrop is a **single unified Cloudflare Pages deployment** — no separate Worker service, no extra configuration.
+
+```
+GitHub Repo
+    │
+    └─► Cloudflare Pages (hosts everything)
+            │
+            ├── Static pages (HTML/CSS/JS)
+            │     ├── / .............. create page
+            │     ├── /s/[id] ........ receive + burn page
+            │     └── /admin ......... branding settings
+            │
+            ├── Pages Functions  ← these ARE the Workers
+            │     ├── POST /api/secret ......... create + store
+            │     ├── GET  /api/secret/[id] .... retrieve + burn
+            │     └── PUT  /api/admin/settings .. update branding
+            │
+            └── KV Namespace (DEADROP_SECRETS)
+                  ├── secret:{uuid} .... encrypted secret blobs
+                  └── config:brand ..... branding settings
+```
+
+### "Is there a Worker?"
+
+Yes — but you don't configure it separately. When Cloudflare Pages deploys, it automatically compiles the API routes into **Pages Functions**, which run as Cloudflare Workers under the hood. You'll see them in your Cloudflare dashboard under **Pages → Your Project → Functions**. No standalone Worker to create or manage.
 
 ---
 
 ## Deploy Your Own
 
-Total time: about 5 minutes.
-
 ### Prerequisites
 
-- [Node.js](https://nodejs.org/) 18+
-- A free [Cloudflare account](https://dash.cloudflare.com/sign-up)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) (`npm install -g wrangler`)
+- [Node.js 18+](https://nodejs.org)
+- A free [Cloudflare account](https://cloudflare.com)
+- Wrangler authenticated: `npx wrangler login`
 
-### Step 1: Clone and install
+---
+
+### Step 1 — Clone and install
 
 ```bash
 git clone https://github.com/realjbmangum/deadrop
@@ -90,33 +96,102 @@ cd deadrop
 npm install
 ```
 
-### Step 2: Create KV namespaces
+---
+
+### Step 2 — Create the KV namespace
+
+Run the setup script. It creates the KV namespace on Cloudflare and **automatically writes the IDs into `wrangler.toml`**:
 
 ```bash
-wrangler kv:namespace create DEADROP_SECRETS
-wrangler kv:namespace create DEADROP_SECRETS --preview
+npm run setup
 ```
 
-Copy the namespace IDs from the output and paste them into `wrangler.toml`:
+No copy-pasting. The script handles everything.
+
+> **What this does:**
+> Runs `wrangler kv:namespace create DEADROP_SECRETS` for production and preview,
+> parses the output, and updates `wrangler.toml` with the real namespace IDs.
+
+---
+
+### Step 3 — Set your admin password
+
+In `wrangler.toml`, set a password for the `/admin` settings page:
 
 ```toml
-[[kv_namespaces]]
-binding = "DEADROP_SECRETS"
-id = "paste-your-production-id-here"
-preview_id = "paste-your-preview-id-here"
+[vars]
+ADMIN_SECRET = "your-strong-password-here"
 ```
 
-### Step 3: Deploy
+Generate a strong one: `openssl rand -hex 32`
+
+---
+
+### Step 4 — Deploy
 
 ```bash
 npm run deploy
 ```
 
-That's it. Your instance is live on `deadrop.pages.dev`.
+This builds the Astro project and deploys to Cloudflare Pages. Your site is live.
 
-### Step 4 (optional): Custom domain
+---
 
-In the Cloudflare dashboard, go to Pages > your project > Custom Domains and add your domain.
+### Step 5 — Configure branding
+
+Visit `/admin` on your deployed site, enter your `ADMIN_SECRET`, and set:
+
+- Site name and tagline
+- Accent color (color picker)
+- Domain and support email
+
+Changes take effect **immediately** — no redeploy needed. Settings are stored in KV.
+
+---
+
+## GitHub Integration (Auto-deploy on push)
+
+If you fork and want Cloudflare to auto-deploy on every `git push`:
+
+1. **Cloudflare Dashboard → Pages → Create a project → Connect to Git**
+2. Select your fork
+3. Build settings:
+   - Build command: `npm run build`
+   - Build output directory: `dist`
+4. **Settings → Functions → KV namespace bindings**:
+   - Variable name: `DEADROP_SECRETS`
+   - Select the KV namespace you created in Step 2
+5. **Settings → Environment Variables**:
+   - `ADMIN_SECRET` = your password
+6. Save and deploy
+
+Every push to `main` triggers an automatic rebuild and deploy.
+
+---
+
+## White-Labeling
+
+### Via `/admin` UI (recommended)
+
+Visit `/admin` on your live site. Enter your password and update name, tagline, colors, and domain through the settings form. Changes are instant — no redeploy, no code edits.
+
+### Via `deadrop.config.json` (sets defaults)
+
+Edit this file before deploying to set initial values:
+
+```json
+{
+  "brand": {
+    "name": "Acme Secrets",
+    "tagline": "Secure client credential delivery.",
+    "primaryColor": "#0ea5e9",
+    "domain": "secrets.acme.com",
+    "supportEmail": "support@acme.com"
+  }
+}
+```
+
+Settings saved via `/admin` always take precedence over this file.
 
 ---
 
@@ -126,57 +201,7 @@ In the Cloudflare dashboard, go to Pages > your project > Custom Domains and add
 npm run dev
 ```
 
-Starts the Astro dev server at `http://localhost:4321`. KV is simulated locally via Wrangler's platform proxy.
-
----
-
-## White-Labeling
-
-Deadrop is designed to be rebranded with a single file. Edit `deadrop.config.json`:
-
-```jsonc
-{
-  "brand": {
-    "name": "Deadrop",         // App name shown in UI and page titles
-    "tagline": "Share it once. Then it's gone.",  // Shown on the home page
-    "logo": null,              // Path to a logo image, or null for text-only
-    "primaryColor": "#ef4444", // Accent color used throughout the UI
-    "domain": "deadrop.dev",   // Your domain (used in generated links)
-    "supportEmail": "hello@deadrop.dev"  // Shown in footer
-  },
-  "limits": {
-    "maxSecretBytes": 10000,   // Max secret size in bytes (~10KB)
-    "maxTtlDays": 30,          // Maximum expiry time
-    "defaultTtlSeconds": 86400 // Default expiry (24 hours)
-  }
-}
-```
-
-Change the name, colors, and domain. Rebuild and deploy. You now have your own branded secret-sharing tool.
-
----
-
-## Project Structure
-
-```
-app-deadrop/
-  deadrop.config.json    # Brand and limits config
-  astro.config.mjs       # Astro + Cloudflare adapter
-  wrangler.toml          # Cloudflare KV bindings
-  src/
-    env.d.ts             # TypeScript env types
-    lib/
-      crypto.ts          # AES-256-GCM encrypt/decrypt (browser-side)
-    pages/
-      index.astro        # Create secret form
-      s/[id].astro       # Receive/reveal secret page
-      api/
-        secret/
-          create.ts      # POST endpoint — store encrypted secret
-          [id].ts        # GET endpoint — return + burn secret
-  public/
-    favicon.svg          # Red droplet favicon
-```
+Starts at `http://localhost:4321`. KV is simulated locally by wrangler's platform proxy — no Cloudflare account required for local dev.
 
 ---
 
@@ -184,33 +209,31 @@ app-deadrop/
 
 | Layer | Technology |
 |-------|-----------|
-| Frontend | [Astro](https://astro.build) + Tailwind CSS |
-| Encryption | Web Crypto API (AES-256-GCM) |
-| Backend | Astro API routes on Cloudflare Pages |
-| Storage | Cloudflare KV (with native TTL expiry) |
+| Frontend | Astro 4 (SSR mode) |
+| Styling | Tailwind CSS + JetBrains Mono |
+| API / Worker | Cloudflare Pages Functions (auto-compiled from Astro API routes) |
+| Storage | Cloudflare KV |
+| Encryption | Web Crypto API — AES-GCM-256, runs in browser |
 | Hosting | Cloudflare Pages (free tier) |
 
 ---
 
 ## FAQ
 
-**Is this actually secure?**
-The encryption is AES-256-GCM via the Web Crypto API -- the same primitives used by Signal and 1Password. The key never leaves the browser or touches the server. The main attack surface is the link itself: if someone intercepts the full URL, they can read the secret (but only once, since it self-destructs on first view).
+**Does the server ever see my secret?**
+No. Encryption happens in your browser before any network request. The server stores only ciphertext. The key is in the URL fragment, which is never sent to the server per the HTTP spec.
 
-**What happens if nobody opens the link?**
-The secret auto-deletes from Cloudflare KV when the TTL expires. Default is 24 hours, configurable up to 30 days.
-
-**Can I recover a burned secret?**
-No. Once viewed, the ciphertext is permanently deleted from KV. There is no undo, no recycle bin, no backup. That's the point.
+**What happens if no one opens the link?**
+KV TTL auto-deletes it. Default: 7 days for 1-view links.
 
 **How much does it cost to run?**
-Cloudflare's free tier includes 100,000 KV reads/day, 1,000 writes/day, and unlimited Pages requests. For most use cases, the cost is $0/month.
+~$0. Cloudflare free tier: 100k KV reads/day, 1k writes/day, Pages deployments free.
 
-**Can I use this at my company?**
-Yes. MIT license. Deploy your own instance, put it on your domain, brand it however you want.
+**Can I set a passphrase on secrets?**
+Not yet — v2 roadmap item.
 
 ---
 
 ## License
 
-[MIT](LICENSE) -- LIGHTHOUSE 27 LLC
+MIT © 2026 LIGHTHOUSE 27 LLC
